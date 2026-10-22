@@ -1,0 +1,52 @@
+rules_version = '2';
+
+// Modelo de datos: users/{uid}/tasks/{taskId}
+// - Solo el usuario autenticado dueño de la ruta puede leer o escribir sus tareas.
+// - El esquema se valida en el servidor: no se aceptan campos extra ni tipos inválidos.
+// - Todo lo demás está denegado por defecto.
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function isOwner(userId) {
+      return request.auth != null && request.auth.uid == userId;
+    }
+
+    function hasValidShape(data) {
+      let fields = ['title', 'description', 'priority', 'dueDate', 'completed', 'createdAt', 'updatedAt'];
+      return data.keys().hasOnly(fields) && data.keys().hasAll(fields);
+    }
+
+    function hasValidValues(data) {
+      return data.title is string
+        && data.title.trim().size() > 0
+        && data.title.size() <= 120
+        && data.description is string
+        && data.description.size() <= 500
+        && data.priority in ['low', 'medium', 'high']
+        && (data.dueDate == null
+            || (data.dueDate is string && data.dueDate.matches('^[0-9]{4}-[0-9]{2}-[0-9]{2}$')))
+        && data.completed is bool
+        && data.createdAt is timestamp
+        && data.updatedAt == request.time;
+    }
+
+    match /users/{userId}/tasks/{taskId} {
+      allow read, delete: if isOwner(userId);
+
+      allow create: if isOwner(userId)
+        && hasValidShape(request.resource.data)
+        && hasValidValues(request.resource.data)
+        && request.resource.data.createdAt == request.time
+        && request.resource.data.completed == false;
+
+      allow update: if isOwner(userId)
+        && hasValidShape(request.resource.data)
+        && hasValidValues(request.resource.data)
+        && request.resource.data.createdAt == resource.data.createdAt;
+    }
+
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

@@ -1,0 +1,31 @@
+# Promoción controlada: solo se aceptan PR en el orden develop → qa → main.
+# Configurar este check como obligatorio en la protección de ramas de qa y main.
+name: Promotion guard
+
+on:
+  pull_request:
+    branches: [qa, main]
+
+permissions:
+  contents: read
+
+jobs:
+  check-source-branch:
+    name: Validar rama de origen
+    runs-on: ubuntu-latest
+    steps:
+      - name: Verificar flujo develop → qa → main
+        env:
+          BASE: ${{ github.base_ref }}
+          HEAD: ${{ github.head_ref }}
+        run: |
+          case "$BASE" in
+            qa)   allowed='^(develop|hotfix/.+)$' ;;
+            main) allowed='^(qa|hotfix/.+)$' ;;
+          esac
+          if [[ "$HEAD" =~ $allowed ]]; then
+            echo "✅ Promoción permitida: $HEAD → $BASE" | tee -a "$GITHUB_STEP_SUMMARY"
+          else
+            echo "::error::No se permite promover '$HEAD' → '$BASE'. Flujo válido: develop → qa → main (o hotfix/*)."
+            exit 1
+          fi

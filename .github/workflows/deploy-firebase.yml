@@ -1,0 +1,122 @@
+# Workflow reutilizable: build + deploy a Firebase (Hosting y reglas de Firestore) + verificación.
+# Las credenciales viven como secretos del GitHub Environment correspondiente, nunca en el repo.
+name: Deploy Firebase
+
+on:
+  workflow_call:
+    inputs:
+      app_env:
+        description: dev | qa | prod (se inyecta en el build y se verifica en el smoke test)
+        required: true
+        type: string
+      github_environment:
+        description: Nombre del GitHub Environment con los secretos y reglas de protección
+        required: true
+        type: string
+      acceptance_tests:
+        description: Ejecutar pruebas de aceptación E2E contra la URL desplegada
+        required: false
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    name: Build, deploy y verificación
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    environment:
+      name: ${{ inputs.github_environment }}
+      url: ${{ steps.deploy.outputs.url }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Validar configuración del ambiente
+        env:
+          FIREBASE_PROJECT_ID: ${{ vars.FIREBASE_PROJECT_ID }}
+          HAS_SA: ${{ secrets.FIREBASE_SERVICE_ACCOUNT != '' }}
+          REF: ${{ github.ref }}
+        run: |
+          echo "FIREBASE_PROJECT_ID=$FIREBASE_PROJECT_ID" >> "$GITHUB_ENV"
+          if [ -z "$FIREBASE_PROJECT_ID" ]; then
+            echo "::error::Falta la variable FIREBASE_PROJECT_ID en el environment '${{ inputs.github_environment }}'."; exit 1
+          fi
+          if [ "$HAS_SA" != "true" ]; then
+            echo "::error::Falta el secreto FIREBASE_SERVICE_ACCOUNT en el environment '${{ inputs.github_environment }}'."; exit 1
+          fi
+          if [ "${{ inputs.app_env }}" = "prod" ] && [ "$REF" != "refs/heads/main" ] && [[ "$REF" != refs/tags/v* ]]; then
+            echo "::error::Producción solo se despliega desde main o un tag v* (ref actual: $REF)."; exit 1
+          fi
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - run: npm ci
+
+      - name: Build para ${{ inputs.app_env }}
+        run: npm run build
+        env:
+          APP_ENV: ${{ inputs.app_env }}
+
+      - name: Autenticación con Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+
+      - name: Desplegar Hosting y reglas de Firestore
+        id: deploy
+        run: |
+          npx firebase deploy \
+            --only hosting,firestore:rules,firestore:indexes \
+            --project "$FIREBASE_PROJECT_ID" \
+            --non-interactive \
+            --message "${{ inputs.app_env }} ${GITHUB_SHA::7} run #${{ github.run_number }}"
+          echo "url=https://${FIREBASE_PROJECT_ID}.web.app" >> "$GITHUB_OUTPUT"
+
+      - name: Smoke test
+        run: >
+          npm run smoke --
+          --url "${{ steps.deploy.outputs.url }}"
+          --env "${{ inputs.app_env }}"
+          --sha "$GITHUB_SHA"
+          --project "$FIREBASE_PROJECT_ID"
+
+      - name: Instalar navegador para aceptación
+        if: inputs.acceptance_tests
+        run: npx playwright install --with-deps chromium
+
+      - name: Pruebas de aceptación E2E contra ${{ steps.deploy.outputs.url }}
+        if: inputs.acceptance_tests
+        run: npm run test:e2e
+        env:
+          CI: 'true'
+          E2E_BASE_URL: ${{ steps.deploy.outputs.url }}
+
+      - uses: actions/upload-artifact@v4
+        if: always() && inputs.acceptance_tests
+        with:
+          name: playwright-report-${{ inputs.app_env }}-${{ github.run_id }}
+          path: |
+            playwright-report/
+            test-results/
+          retention-days: 30
+
+      - name: Registro del despliegue
+        if: success()
+        run: |
+          {
+            echo "### 🚀 Despliegue ${{ inputs.app_env }} completado"
+            echo ""
+            echo "| Campo | Valor |"
+            echo "|---|---|"
+            echo "| URL | ${{ steps.deploy.outputs.url }} |"
+            echo "| Proyecto Firebase | \`$FIREBASE_PROJECT_ID\` |"
+            echo "| Commit | \`$GITHUB_SHA\` |"
+            echo "| Rama/ref | \`$GITHUB_REF_NAME\` |"
+            echo "| Autor del cambio | @$GITHUB_ACTOR |"
+            echo "| Fecha (UTC) | $(date -u +%Y-%m-%dT%H:%M:%SZ) |"
+          } >> "$GITHUB_STEP_SUMMARY"

@@ -1,0 +1,61 @@
+# Entrega continua: develop → DEV, qa → QA, main → PRODUCCIÓN (con aprobación manual).
+# Cada despliegue corre primero toda la CI; si falla, no se despliega nada.
+name: CD
+
+on:
+  push:
+    branches: [develop, qa, main]
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Ambiente a (re)desplegar con la ref seleccionada (útil para rollback)'
+        required: true
+        type: choice
+        options: [dev, qa, prod]
+
+permissions:
+  contents: read
+
+# Nunca dos despliegues simultáneos al mismo ambiente; no se cancelan a mitad de camino.
+concurrency:
+  group: cd-${{ github.event_name == 'workflow_dispatch' && inputs.environment || github.ref_name }}
+  cancel-in-progress: false
+
+jobs:
+  ci:
+    name: CI
+    uses: ./.github/workflows/ci.yml
+
+  dev:
+    name: DEV
+    needs: ci
+    if: (github.event_name == 'push' && github.ref_name == 'develop') || inputs.environment == 'dev'
+    uses: ./.github/workflows/deploy-firebase.yml
+    with:
+      app_env: dev
+      github_environment: development
+      acceptance_tests: false
+    secrets: inherit
+
+  qa:
+    name: QA
+    needs: ci
+    if: (github.event_name == 'push' && github.ref_name == 'qa') || inputs.environment == 'qa'
+    uses: ./.github/workflows/deploy-firebase.yml
+    with:
+      app_env: qa
+      github_environment: qa
+      acceptance_tests: true
+    secrets: inherit
+
+  prod:
+    name: PRODUCCIÓN
+    needs: ci
+    if: (github.event_name == 'push' && github.ref_name == 'main') || inputs.environment == 'prod'
+    uses: ./.github/workflows/deploy-firebase.yml
+    with:
+      app_env: prod
+      # El environment "production" exige revisores: el job queda en pausa hasta la aprobación.
+      github_environment: production
+      acceptance_tests: false
+    secrets: inherit
