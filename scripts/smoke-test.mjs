@@ -103,6 +103,16 @@ await check('Cabeceras de seguridad', async () => {
   return required.join(', ')
 })
 
+await check('index.html y version.json sin caché (cada despliegue se ve de inmediato)', async () => {
+  if (isLocal) return 'omitido: emulador local'
+  for (const path of ['/', '/version.json']) {
+    const { response } = await get(path)
+    const cache = response.headers.get('cache-control') ?? ''
+    expect(/no-cache|no-store/.test(cache), `${path} → Cache-Control "${cache}"`)
+  }
+  return 'no-cache'
+})
+
 await check('Rutas SPA reescritas a index.html', async () => {
   const { response, body } = await get('/ruta-inexistente')
   expect(response.status === 200 && body.includes('<div id="root">'), `status ${response.status}`)
