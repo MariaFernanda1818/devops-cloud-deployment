@@ -1,12 +1,12 @@
 # Guía de configuración de la infraestructura
 
-Pasos manuales, que se hacen una sola vez, para habilitar los tres ambientes. Ninguno requiere tarjeta de crédito ni activar facturación (plan **Spark**).
+Pasos manuales, que se hacen una sola vez, para habilitar los tres ambientes. **Estado: completados en DEV, QA y PDN** (verificado el 2026-10-22). Ninguno requiere tarjeta de crédito ni activar facturación (plan **Spark**).
 
 | Ambiente | Proyecto Firebase | Número de proyecto | GitHub Environment | Rama |
 |---|---|---|---|---|
 | DEV | `taskflow-dev-mf1818` | `977902311183` | `development` | `develop` |
-| QA | _pendiente_ | _pendiente_ | `qa` | `qa` |
-| PDN | _pendiente_ | _pendiente_ | `production` | `main` |
+| QA | `taskflow-qa-mf1818` | `749584004557` | `qa` | `qa` |
+| PDN | `taskflow-prod-mf1818` | `1048091956239` | `production` | `main` |
 
 Identificadores de GitHub (públicos, obtenidos de `api.github.com`):
 
