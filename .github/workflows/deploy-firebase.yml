@@ -77,6 +77,9 @@ jobs:
         with:
           workload_identity_provider: ${{ vars.GCP_WORKLOAD_IDENTITY_PROVIDER }}
           service_account: ${{ vars.GCP_SERVICE_ACCOUNT }}
+          # Hace el intercambio OIDC → STS → cuenta de servicio en este paso: si Google lo
+          # rechaza, el error exacto aparece aquí (firebase-tools lo oculta tras "Failed to authenticate").
+          token_format: access_token
 
       - name: Autenticación con Google Cloud (clave JSON, alternativa)
         if: vars.GCP_WORKLOAD_IDENTITY_PROVIDER == ''
