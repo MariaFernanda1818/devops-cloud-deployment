@@ -42,7 +42,7 @@ GitHub emite un token OIDC firmado y de corta duración en cada job. Google lo v
 | Capa | Dónde | Qué exige |
 |---|---|---|
 | 1. Condición del proveedor OIDC | Pool `github` / proveedor `github-oidc` | `repository_id == 1429098189` **y** `repository_owner_id == 83258884` **y** `repository == MariaFernanda1818/devops-cloud-deployment` **y** `environment == development` |
-| 2. Principal autorizado en la cuenta de servicio | IAM de `github-deployer` | Solo el sujeto `repo:MariaFernanda1818/devops-cloud-deployment:environment:development` tiene `roles/iam.workloadIdentityUser` |
+| 2. Principal autorizado en la cuenta de servicio | IAM de `github-deployer` | Solo el sujeto inmutable `repo:MariaFernanda1818@83258884/devops-cloud-deployment@1429098189:environment:development` tiene `roles/iam.workloadIdentityUser` |
 | 3. Roles de la cuenta de servicio | IAM del proyecto | Solo los 4 roles de §2.3 |
 | 4. GitHub Environment | Settings → Environments | El environment `development` solo acepta jobs de la rama `develop` |
 
@@ -51,28 +51,32 @@ GitHub emite un token OIDC firmado y de corta duración en cada job. Google lo v
 
 ### 2.2 Verificación del principal IAM para `development`
 
-El claim `sub` del token de GitHub para un job que declara `environment:` tiene, por defecto, este formato:
+Este repositorio se creó el **2026-10-22**. GitHub aplica el **formato inmutable del claim `sub`** a todo repositorio creado después del 15 de julio de 2026: el `sub` incluye los IDs numéricos del propietario y del repositorio, separados por `@`. La API de GitHub lo confirma para este repositorio:
 
 ```
-repo:<owner>/<repo>:environment:<nombre-del-environment>
+GET /repos/MariaFernanda1818/devops-cloud-deployment/actions/oidc/customization/sub
+{ "use_default": true, "use_immutable_subject": true,
+  "sub_claim_prefix": "repo:MariaFernanda1818@83258884/devops-cloud-deployment@1429098189" }
 ```
 
-En este repositorio el job de despliegue (`.github/workflows/deploy-firebase.yml`) declara `environment.name: ${{ inputs.github_environment }}` y `cd.yml` lo invoca con `development` para la rama `develop`. Además, en workflows reutilizables el `sub` corresponde al repositorio que los invoca. El sujeto esperado es entonces:
+El job de despliegue (`.github/workflows/deploy-firebase.yml`) declara `environment.name: ${{ inputs.github_environment }}` y `cd.yml` lo invoca con `development` para la rama `develop`. En workflows reutilizables el `sub` corresponde al repositorio que los invoca. El sujeto real es:
 
 ```
-repo:MariaFernanda1818/devops-cloud-deployment:environment:development
+repo:MariaFernanda1818@83258884/devops-cloud-deployment@1429098189:environment:development
 ```
 
-y el principal que recibe `roles/iam.workloadIdentityUser`:
+(90 bytes; Google limita `google.subject` a 127). El principal que recibe `roles/iam.workloadIdentityUser`:
 
 ```
-principal://iam.googleapis.com/projects/977902311183/locations/global/workloadIdentityPools/github/subject/repo:MariaFernanda1818/devops-cloud-deployment:environment:development
+principal://iam.googleapis.com/projects/977902311183/locations/global/workloadIdentityPools/github/subject/repo:MariaFernanda1818@83258884/devops-cloud-deployment@1429098189:environment:development
 ```
 
 Notas:
-- La comparación distingue mayúsculas y minúsculas. `MariaFernanda1818` coincide con el nombre devuelto por la API de GitHub.
-- Esto supone que el repositorio **no** tiene una plantilla personalizada del claim `sub`, que es lo predeterminado. Si alguien la personalizara, el login fallaría con `unauthorized_client` / `subject` (falla segura) y habría que ajustar el principal.
+- **El formato antiguo** (`repo:MariaFernanda1818/devops-cloud-deployment:environment:development`) **no coincide** con este repositorio: produce `Permission 'iam.serviceAccounts.getAccessToken' denied`.
+- La comparación distingue mayúsculas y minúsculas.
+- El claim `repository` (usado en la condición del proveedor) **no cambia**: sigue siendo `MariaFernanda1818/devops-cloud-deployment`.
 - Los jobs de CI (pruebas) no declaran environment, así que su `sub` no coincide y **no pueden** obtener credenciales.
+- Referencias: [changelog de GitHub](https://github.blog/changelog/2026-04-23-immutable-subject-claims-for-github-actions-oidc-tokens/) · [referencia OIDC](https://docs.github.com/actions/reference/openid-connect-reference).
 
 ### 2.3 Permisos mínimos verificados
 
@@ -120,7 +124,9 @@ set -euo pipefail
 PROJECT_ID="taskflow-dev-mf1818"
 PROJECT_NUMBER="977902311183"
 GH_ENVIRONMENT="development"
-REPO="MariaFernanda1818/devops-cloud-deployment"
+OWNER="MariaFernanda1818"
+REPO_NAME="devops-cloud-deployment"
+REPO="${OWNER}/${REPO_NAME}"
 REPO_ID="1429098189"
 OWNER_ID="83258884"
 # --------------------------------------------
@@ -128,7 +134,8 @@ POOL_ID="github"
 PROVIDER_ID="github-oidc"
 SA_NAME="github-deployer"
 SA_EMAIL="${SA_NAME}@${PROJECT_ID}.iam.gserviceaccount.com"
-SUBJECT="repo:${REPO}:environment:${GH_ENVIRONMENT}"
+# Formato inmutable del sub (repos creados después del 15-jul-2026): incluye los IDs numéricos.
+SUBJECT="repo:${OWNER}@${OWNER_ID}/${REPO_NAME}@${REPO_ID}:environment:${GH_ENVIRONMENT}"
 PRINCIPAL="principal://iam.googleapis.com/projects/${PROJECT_NUMBER}/locations/global/workloadIdentityPools/${POOL_ID}/subject/${SUBJECT}"
 ROLES=(
   roles/firebasehosting.admin
@@ -229,7 +236,7 @@ echo "GCP_SERVICE_ACCOUNT            = ${SA_EMAIL}"
 
 **Resultado esperado de la verificación:**
 - La condición contiene los tres identificadores y `assertion.environment=='development'`.
-- En la cuenta de servicio, un solo binding `roles/iam.workloadIdentityUser` → `principal://…/subject/repo:MariaFernanda1818/devops-cloud-deployment:environment:development`.
+- En la cuenta de servicio, un solo binding `roles/iam.workloadIdentityUser` → `principal://…/subject/repo:MariaFernanda1818@83258884/devops-cloud-deployment@1429098189:environment:development`.
 - Exactamente los 4 roles de §2.3.
 - Ninguna clave gestionada por el usuario.
 - `GCP_WORKLOAD_IDENTITY_PROVIDER` = `projects/977902311183/locations/global/workloadIdentityPools/github/providers/github-oidc`.
