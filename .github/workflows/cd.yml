@@ -1,5 +1,7 @@
 # Entrega continua: develop → DEV, qa → QA, main → PRODUCCIÓN (con aprobación manual).
 # Cada despliegue corre primero toda la CI; si falla, no se despliega nada.
+# Crear una rama (push con created=true) no despliega: los ambientes se actualizan solo con
+# pushes/merges posteriores, de modo que la promoción pasa siempre por un Pull Request.
 name: CD
 
 on:
@@ -29,7 +31,7 @@ jobs:
   dev:
     name: DEV
     needs: ci
-    if: (github.event_name == 'push' && github.ref_name == 'develop') || inputs.environment == 'dev'
+    if: github.event.created != true && ((github.event_name == 'push' && github.ref_name == 'develop') || inputs.environment == 'dev')
     uses: ./.github/workflows/deploy-firebase.yml
     permissions:
       contents: read
@@ -43,7 +45,7 @@ jobs:
   qa:
     name: QA
     needs: ci
-    if: (github.event_name == 'push' && github.ref_name == 'qa') || inputs.environment == 'qa'
+    if: github.event.created != true && ((github.event_name == 'push' && github.ref_name == 'qa') || inputs.environment == 'qa')
     uses: ./.github/workflows/deploy-firebase.yml
     permissions:
       contents: read
@@ -57,7 +59,7 @@ jobs:
   prod:
     name: PRODUCCIÓN
     needs: ci
-    if: (github.event_name == 'push' && github.ref_name == 'main') || inputs.environment == 'prod'
+    if: github.event.created != true && ((github.event_name == 'push' && github.ref_name == 'main') || inputs.environment == 'prod')
     uses: ./.github/workflows/deploy-firebase.yml
     permissions:
       contents: read
