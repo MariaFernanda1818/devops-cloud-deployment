@@ -21,6 +21,7 @@ on:
 
 permissions:
   contents: read
+  id-token: write # necesario para obtener el token OIDC de GitHub (Workload Identity Federation)
 
 jobs:
   deploy:
@@ -36,15 +37,21 @@ jobs:
       - name: Validar configuración del ambiente
         env:
           FIREBASE_PROJECT_ID: ${{ vars.FIREBASE_PROJECT_ID }}
-          HAS_SA: ${{ secrets.FIREBASE_SERVICE_ACCOUNT != '' }}
+          WIF_PROVIDER: ${{ vars.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+          WIF_SERVICE_ACCOUNT: ${{ vars.GCP_SERVICE_ACCOUNT }}
+          HAS_KEY: ${{ secrets.FIREBASE_SERVICE_ACCOUNT != '' }}
           REF: ${{ github.ref }}
         run: |
           echo "FIREBASE_PROJECT_ID=$FIREBASE_PROJECT_ID" >> "$GITHUB_ENV"
           if [ -z "$FIREBASE_PROJECT_ID" ]; then
             echo "::error::Falta la variable FIREBASE_PROJECT_ID en el environment '${{ inputs.github_environment }}'."; exit 1
           fi
-          if [ "$HAS_SA" != "true" ]; then
-            echo "::error::Falta el secreto FIREBASE_SERVICE_ACCOUNT en el environment '${{ inputs.github_environment }}'."; exit 1
+          if [ -n "$WIF_PROVIDER" ] && [ -n "$WIF_SERVICE_ACCOUNT" ]; then
+            echo "Autenticación: Workload Identity Federation (OIDC, sin claves permanentes)" | tee -a "$GITHUB_STEP_SUMMARY"
+          elif [ "$HAS_KEY" = "true" ]; then
+            echo "::warning::Usando clave JSON de cuenta de servicio. Se recomienda migrar a Workload Identity Federation."
+          else
+            echo "::error::Configura GCP_WORKLOAD_IDENTITY_PROVIDER y GCP_SERVICE_ACCOUNT (recomendado) o el secreto FIREBASE_SERVICE_ACCOUNT en el environment '${{ inputs.github_environment }}'."; exit 1
           fi
           if [ "${{ inputs.app_env }}" = "prod" ] && [ "$REF" != "refs/heads/main" ] && [[ "$REF" != refs/tags/v* ]]; then
             echo "::error::Producción solo se despliega desde main o un tag v* (ref actual: $REF)."; exit 1
@@ -62,7 +69,17 @@ jobs:
         env:
           APP_ENV: ${{ inputs.app_env }}
 
-      - name: Autenticación con Google Cloud
+      # Preferido: OIDC. GitHub emite un token de corta duración que Google intercambia por
+      # credenciales temporales de la cuenta de servicio; no existe ninguna clave que filtrar.
+      - name: Autenticación con Google Cloud (Workload Identity Federation)
+        if: vars.GCP_WORKLOAD_IDENTITY_PROVIDER != ''
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ vars.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ vars.GCP_SERVICE_ACCOUNT }}
+
+      - name: Autenticación con Google Cloud (clave JSON, alternativa)
+        if: vars.GCP_WORKLOAD_IDENTITY_PROVIDER == ''
         uses: google-github-actions/auth@v2
         with:
           credentials_json: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}

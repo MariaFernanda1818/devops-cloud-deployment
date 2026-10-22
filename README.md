@@ -192,10 +192,10 @@ Los emuladores usan el proyecto ficticio `demo-taskflow`: no se conectan a ning�
 
 | Aspecto | Medida |
 |---|---|
-| Secretos | **Ningún secreto en el repositorio.** La única credencial (cuenta de servicio de despliegue) vive como secreto cifrado del **GitHub Environment** de cada ambiente. `.gitignore` bloquea `.env*`, `service-account*.json` y similares. |
+| Secretos | **Ningún secreto en el repositorio ni claves permanentes.** GitHub Actions se autentica en Google Cloud con **Workload Identity Federation (OIDC)**: credenciales temporales limitadas al repositorio y al environment del job. La clave JSON solo existe como alternativa documentada. `.gitignore` bloquea `.env*`, `service-account*.json` y similares. |
 | Configuración web de Firebase | `apiKey`/`appId` **no son secretos** (identifican el proyecto). Se sirven desde `/__/firebase/init.json`. La protección real la dan las reglas de Firestore y la restricción de la API key por dominio (ver guía). |
 | Autorización de datos | [`firestore.rules`](firestore.rules): solo el dueño (`request.auth.uid`) accede a `users/{uid}/tasks`; validación de campos, tipos, longitudes y timestamps del servidor; todo lo demás denegado. Probado automáticamente. |
-| Mínimo privilegio en CI | Cuenta de servicio distinta por proyecto con roles limitados a Hosting, reglas e índices. El workflow usa `permissions: contents: read`. |
+| Mínimo privilegio en CI | Una cuenta de servicio por proyecto con solo 4 roles: Firebase Hosting Admin, Firebase Rules Admin, Cloud Datastore Index Admin y Service Usage Consumer. Solo los jobs del environment correspondiente pueden suplantarla. Los workflows usan `contents: read` y, en el despliegue, `id-token: write`. |
 | Producción protegida | Environment `production` con revisores obligatorios; solo despliega desde `main` o tags `v*`. Ramas protegidas con checks obligatorios. |
 | Cabeceras HTTP | CSP estricta (`script-src 'self'`, `frame-ancestors 'none'`), HSTS, `X-Content-Type-Options`, `X-Frame-Options: DENY`, `Referrer-Policy`, `Permissions-Policy`. Verificadas por el smoke test en cada despliegue. |
 | Transporte | HTTPS obligatorio con certificado gestionado por Firebase Hosting. |

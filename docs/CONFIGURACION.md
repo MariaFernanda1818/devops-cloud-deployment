@@ -1,76 +1,154 @@
 # Guía de configuración de la infraestructura
 
-Pasos manuales, que se hacen una sola vez, para habilitar los tres ambientes. Ninguno requiere tarjeta de crédito ni activar facturación.
+Pasos manuales, que se hacen una sola vez, para habilitar los tres ambientes. Ninguno requiere tarjeta de crédito ni activar facturación (plan **Spark**).
 
-> Convención usada en esta guía: `<sufijo>` = algo único, p. ej. tus iniciales + número (`mfv27`). Los IDs de proyecto de Firebase son globales y no se pueden cambiar después.
+| Ambiente | Proyecto Firebase | Número de proyecto | GitHub Environment | Rama |
+|---|---|---|---|---|
+| DEV | `taskflow-dev-mf1818` | `977902311183` | `development` | `develop` |
+| QA | _pendiente_ | _pendiente_ | `qa` | `qa` |
+| PDN | _pendiente_ | _pendiente_ | `production` | `main` |
 
-## 1. Crear los tres proyectos Firebase
+---
 
-Repite para **dev**, **qa** y **prod** en https://console.firebase.google.com:
+## 1. Proyecto Firebase (por ambiente)
 
-1. **Agregar proyecto** → nombre `taskflow-dev-<sufijo>` (igual con `qa` y `prod`). Anota el **ID del proyecto** que muestra la consola.
-2. Google Analytics: **desactivado** (no se necesita).
-3. Verifica que el plan sea **Spark (gratuito)**. **No** actualices a Blaze.
-4. **Build → Firestore Database → Crear base de datos** → modo **producción** → ubicación (p. ej. `nam5` o `southamerica-east1`, la misma en los tres).
-5. **Build → Authentication → Comenzar → Método de acceso → Anónimo → Habilitar.**
-6. **Build → Hosting → Comenzar** (solo para activar el sitio por defecto `<id-proyecto>.web.app`; no hace falta ejecutar los comandos que sugiere).
-7. **Configuración del proyecto → General → Tus apps → Agregar app web (</>)** con apodo `taskflow-web`, sin marcar “configurar Hosting”. Esto genera la configuración web que Hosting publicará en `/__/firebase/init.json`.
+En https://console.firebase.google.com:
 
-## 2. Cuenta de servicio para el despliegue (una por proyecto)
+1. Crear el proyecto (plan Spark, sin Google Analytics).
+2. **Firestore Database** → crear `(default)` en modo producción. DEV usa `nam5`; usa la misma ubicación en QA y PDN.
+3. **Authentication** → Método de acceso → **Anónimo** → Habilitar.
+4. **Hosting** → Comenzar.
+5. **Configuración del proyecto → General → Tus apps** → registrar app web.
+6. **Vincular la app web al sitio de Hosting.** En la misma tarjeta de la app web, en la sección *Firebase Hosting*, elige **Vincular a un sitio** y selecciona el sitio del proyecto (p. ej. `taskflow-dev-mf1818`).
+   La app obtiene su configuración de `/__/firebase/init.json`, que publica Hosting. Vincular la app al sitio garantiza que ese archivo entregue la configuración de esta app. Comprobación: `npx firebase hosting:sites:list --project <id>` debe mostrar el App ID en la columna *App ID (if set)*.
 
-En https://console.cloud.google.com, con el proyecto correspondiente seleccionado:
+> **Variables `VITE_*`: no se necesitan en GitHub.** La configuración web (apiKey, appId, projectId…) no se inyecta en el build: cada sitio la sirve en `/__/firebase/init.json`. Las variables `VITE_FIREBASE_*` de `src/vite-env.d.ts` son opcionales y solo sirven para correr la app en local apuntando a un proyecto real. El ambiente que se muestra en la app lo define el pipeline con `APP_ENV`.
 
-1. **IAM y administración → Cuentas de servicio → Crear cuenta de servicio** → nombre `github-deployer`.
-2. Asigna los roles:
-   - `Administrador de Firebase Hosting` (Firebase Hosting Admin)
-   - `Administrador de reglas de Firebase` (Firebase Rules Admin)
-   - `Administrador de índices de Cloud Datastore` (Cloud Datastore Index Admin)
-   - `Consumidor de Service Usage` (Service Usage Consumer)
-3. Abre la cuenta → **Claves → Agregar clave → JSON**. Se descarga un archivo.
-   - **No lo guardes dentro del repositorio.** Úsalo en el paso 3 y luego bórralo de tu equipo.
+---
 
-> Si el primer despliegue falla con `403 PERMISSION_DENIED`, el log indicará el permiso faltante. Agrega ese rol puntual en lugar de dar permisos amplios.
+## 2. Autenticación de GitHub Actions sin claves (Workload Identity Federation)
 
-## 3. GitHub Environments (Settings → Environments)
+GitHub emite un token OIDC de corta duración en cada ejecución. Google lo valida y entrega credenciales temporales (≈1 h) de una cuenta de servicio. **No existe ninguna clave JSON que se pueda filtrar o que haya que rotar.** WIF no tiene costo y funciona en proyectos Spark.
 
-Crea tres environments con exactamente estos nombres:
+La confianza queda restringida a:
+- el dueño del repositorio por **ID numérico** (`83258884`), que no se puede suplantar renombrando una cuenta;
+- el repositorio `MariaFernanda1818/devops-cloud-deployment`;
+- y, en la cuenta de servicio, **solo a los jobs que corren en el environment correspondiente** (`development`, `qa` o `production`).
 
-| Environment | Variable `FIREBASE_PROJECT_ID` | Secreto `FIREBASE_SERVICE_ACCOUNT` | Reglas de protección |
-|---|---|---|---|
-| `development` | ID del proyecto dev | JSON completo de la clave dev | Deployment branches: `develop` |
-| `qa` | ID del proyecto qa | JSON completo de la clave qa | Deployment branches: `qa` |
-| `production` | ID del proyecto prod | JSON completo de la clave prod | **Required reviewers**: tú (y el docente si aplica) · Deployment branches: `main` y tags `v*` · *Prevent self-review* opcional |
+### 2.1 Ejecutar en Cloud Shell
 
-- La **variable** se crea en *Environment variables*.
-- El **secreto** se crea en *Environment secrets*: pega todo el contenido del JSON.
+Abre https://console.cloud.google.com/?cloudshell=true con el proyecto DEV seleccionado. Cloud Shell es gratuito y ya trae `gcloud`. Pega este bloque:
 
-## 4. Protección de ramas (Settings → Branches → Add rule), o Rulesets
+```bash
+# ---- Valores del ambiente DEV ----
+PROJECT_ID=taskflow-dev-mf1818
+PROJECT_NUMBER=977902311183
+GH_ENVIRONMENT=development
+REPO=MariaFernanda1818/devops-cloud-deployment
+GH_OWNER_ID=83258884
+# ----------------------------------
+SA_EMAIL="github-deployer@${PROJECT_ID}.iam.gserviceaccount.com"
+gcloud config set project "$PROJECT_ID"
 
-Para `develop`, `qa` y `main`:
+# APIs necesarias (gratuitas)
+gcloud services enable \
+  iam.googleapis.com iamcredentials.googleapis.com sts.googleapis.com \
+  cloudresourcemanager.googleapis.com serviceusage.googleapis.com \
+  firebase.googleapis.com firebasehosting.googleapis.com \
+  firebaserules.googleapis.com firestore.googleapis.com
 
-- ✅ Require a pull request before merging
-- ✅ Require status checks to pass: `Lint, tipos, pruebas unitarias y build`, `Reglas de seguridad de Firestore (emulador)`, `E2E con emuladores (Chromium escritorio y móvil)`
-- Para `qa` y `main`, además: `Validar rama de origen` (promotion guard)
-- ✅ Do not allow bypassing the above settings (opcional, recomendado en `main`)
+# Cuenta de servicio de despliegue, sin claves
+gcloud iam service-accounts create github-deployer \
+  --display-name="GitHub Actions deployer (${GH_ENVIRONMENT})"
 
-Los nombres de los checks aparecen en la lista después de que los workflows se ejecutan al menos una vez.
+# Roles mínimos: Hosting, reglas, índices y verificación de APIs
+for ROLE in roles/firebasehosting.admin roles/firebaserules.admin \
+            roles/datastore.indexAdmin roles/serviceusage.serviceUsageConsumer; do
+  gcloud projects add-iam-policy-binding "$PROJECT_ID" \
+    --member="serviceAccount:${SA_EMAIL}" --role="$ROLE" --condition=None --quiet >/dev/null
+done
+
+# Pool y proveedor OIDC de GitHub, restringidos al dueño y al repositorio
+gcloud iam workload-identity-pools create github \
+  --location=global --display-name="GitHub Actions"
+
+gcloud iam workload-identity-pools providers create-oidc github-oidc \
+  --location=global --workload-identity-pool=github \
+  --display-name="GitHub OIDC" \
+  --issuer-uri="https://token.actions.githubusercontent.com" \
+  --attribute-mapping="google.subject=assertion.sub,attribute.repository=assertion.repository,attribute.repository_owner_id=assertion.repository_owner_id,attribute.environment=assertion.environment" \
+  --attribute-condition="assertion.repository_owner_id=='${GH_OWNER_ID}' && assertion.repository=='${REPO}'"
+
+# Solo los jobs del environment indicado pueden usar la cuenta de servicio
+gcloud iam service-accounts add-iam-policy-binding "$SA_EMAIL" \
+  --role=roles/iam.workloadIdentityUser \
+  --member="principal://iam.googleapis.com/projects/${PROJECT_NUMBER}/locations/global/workloadIdentityPools/github/subject/repo:${REPO}:environment:${GH_ENVIRONMENT}"
+
+# Valores para GitHub
+echo "GCP_WORKLOAD_IDENTITY_PROVIDER = $(gcloud iam workload-identity-pools providers describe github-oidc --location=global --workload-identity-pool=github --format='value(name)')"
+echo "GCP_SERVICE_ACCOUNT            = ${SA_EMAIL}"
+```
+
+Para QA y PDN, repite el bloque en su proyecto cambiando `PROJECT_ID`, `PROJECT_NUMBER` y `GH_ENVIRONMENT` (`qa` / `production`).
+
+> Si algún comando pide habilitar facturación, **detente**: no actives Blaze y avísame.
+> Si el primer despliegue falla con `403 ... Permission 'X' denied`, agrega solo el rol que contiene ese permiso; no uses roles amplios como *Editor* o *Firebase Admin*.
+
+### 2.2 Alternativa con clave JSON (no recomendada)
+
+Solo si WIF no funcionara: crea una clave JSON para `github-deployer`, guárdala como secreto `FIREBASE_SERVICE_ACCOUNT` del environment y elimínala de tu equipo. El workflow la usa solo si **no** existe la variable `GCP_WORKLOAD_IDENTITY_PROVIDER`.
+
+---
+
+## 3. GitHub Environments
+
+Ruta: **GitHub → repositorio → Settings → Environments → New environment**.
+
+### `development` (configúralo ahora)
+
+| Tipo | Nombre | Valor |
+|---|---|---|
+| Environment **variable** | `FIREBASE_PROJECT_ID` | `taskflow-dev-mf1818` |
+| Environment **variable** | `GCP_WORKLOAD_IDENTITY_PROVIDER` | Salida del paso 2.1 (`projects/977902311183/locations/global/workloadIdentityPools/github/providers/github-oidc`) |
+| Environment **variable** | `GCP_SERVICE_ACCOUNT` | `github-deployer@taskflow-dev-mf1818.iam.gserviceaccount.com` |
+| Deployment branches and tags | *Selected branches and tags* | Regla: `develop` |
+
+No hace falta ningún **secret**: con WIF todos los valores son identificadores no sensibles.
+
+### `qa` y `production` (créalos ahora, aunque todavía no tengan proyecto)
+
+Crea los environments vacíos **antes de subir `qa` o `main`**. Si un workflow referencia un environment que no existe, GitHub lo crea automáticamente **sin protección**.
+
+- `qa` → Deployment branches: `qa`.
+- `production` → ✅ **Required reviewers**: tu usuario (y el docente si aplica) · Deployment branches: `main` y tags `v*`.
+
+---
+
+## 4. Protección de ramas
+
+**Settings → Rules → Rulesets** (o *Branches*). Configúrala después del primer push, cuando los checks ya existan:
+
+- `develop`, `qa`, `main`: requerir PR y los checks `Lint, tipos, pruebas unitarias y build`, `Reglas de seguridad de Firestore (emulador)`, `E2E con emuladores (Chromium escritorio y móvil)`.
+- `qa` y `main`: además, `Validar rama de origen`.
+
+---
 
 ## 5. Restringir la API key web (recomendado)
 
-Google Cloud Console → **APIs y servicios → Credenciales** → la clave “Browser key (auto created by Firebase)” → *Restricciones de aplicaciones* → **Sitios web**: agrega `https://<id-proyecto>.web.app/*` y `https://<id-proyecto>.firebaseapp.com/*`. Repite en cada proyecto.
+Google Cloud Console → **APIs y servicios → Credenciales** → “Browser key (auto created by Firebase)” → *Restricciones de aplicaciones* → **Sitios web**:
+`https://taskflow-dev-mf1818.web.app/*` y `https://taskflow-dev-mf1818.firebaseapp.com/*`.
 
-## 6. Primer despliegue
+---
 
-1. Push de `develop` → revisar **Actions → CD** → job DEV en verde → abrir la URL del environment.
-2. PR `develop → qa` → merge → job QA ejecuta smoke test y aceptación E2E contra la URL real.
-3. PR `qa → main` → merge → el job PRODUCCIÓN queda **Waiting for review** → *Review deployments* → **Approve** → despliegue y smoke test.
-4. Registrar las tres URLs reales en el README (sección 1).
+## 6. Primer despliegue (solo DEV)
 
-## 7. Evidencias a capturar para la entrega
+1. `git push -u origin develop`. Al ser la primera rama del repositorio vacío, GitHub la marcará como rama por defecto; se cambia a `main` cuando subamos `main`.
+2. **Actions → CD**: corren los 4 jobs de CI y luego **DEV**. Los jobs QA y PRODUCCIÓN aparecen como *skipped*.
+3. Al terminar, el smoke test verifica HTTPS, la app, el commit y ambiente en `version.json`, las cabeceras de seguridad, las reescrituras SPA y que `init.json` corresponda a `taskflow-dev-mf1818`.
 
-- Actions: un run de CD por ambiente en verde (resumen con tabla del smoke test y registro del despliegue).
-- Un run donde una prueba falla y **no** se despliega (p. ej. un PR con un test roto).
-- La pantalla de aprobación pendiente de `production` y el registro de quién aprobó.
-- Settings → Environments y Branch protection configurados.
-- Las tres URLs abiertas mostrando la insignia DEV / QA / PRODUCCIÓN y el commit en el pie.
-- Firebase Console: Hosting (historial de versiones) y Firestore (datos de demostración) de cada proyecto.
+## 7. Evidencias a capturar
+
+- Run de CD en verde con el resumen del smoke test y el registro del despliegue.
+- Settings → Environments (`development` con su regla de ramas; `production` con revisores).
+- La URL DEV abierta con la insignia **DEV** y el commit en el pie.
+- Firebase Console → Hosting (historial de versiones) y Firestore (tareas de prueba).

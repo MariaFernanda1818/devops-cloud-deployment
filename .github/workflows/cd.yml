@@ -31,6 +31,9 @@ jobs:
     needs: ci
     if: (github.event_name == 'push' && github.ref_name == 'develop') || inputs.environment == 'dev'
     uses: ./.github/workflows/deploy-firebase.yml
+    permissions:
+      contents: read
+      id-token: write
     with:
       app_env: dev
       github_environment: development
@@ -42,6 +45,9 @@ jobs:
     needs: ci
     if: (github.event_name == 'push' && github.ref_name == 'qa') || inputs.environment == 'qa'
     uses: ./.github/workflows/deploy-firebase.yml
+    permissions:
+      contents: read
+      id-token: write
     with:
       app_env: qa
       github_environment: qa
@@ -53,6 +59,9 @@ jobs:
     needs: ci
     if: (github.event_name == 'push' && github.ref_name == 'main') || inputs.environment == 'prod'
     uses: ./.github/workflows/deploy-firebase.yml
+    permissions:
+      contents: read
+      id-token: write
     with:
       app_env: prod
       # El environment "production" exige revisores: el job queda en pausa hasta la aprobación.
