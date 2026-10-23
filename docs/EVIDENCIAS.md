@@ -25,14 +25,15 @@ Las capturas van en `docs/evidencias/` con el nombre indicado. Las marcadas ✅ 
 | 6 | `gh-cd1-fallo.png` | Pipeline detenido por un fallo (CD #1): no se desplegó | https://github.com/MariaFernanda1818/devops-cloud-deployment/actions/runs/39720368963 |
 | 7 | `gh-pr2-checks.png` | PR #2 `qa → main` con los 5 checks en verde y *Validar rama de origen* | https://github.com/MariaFernanda1818/devops-cloud-deployment/pull/2 |
 | 8 | `gh-environments.png` | Settings → Environments: `development`, `qa`, `production` | Settings → Environments |
-| 9 | `gh-env-production.png` | Configuración de `production`: *Required reviewers*, rama `main`, sin bypass de administradores | Settings → Environments → production |
+| 9 | `gh-env-production.png` | Configuración de `production`: *Required reviewers* (`MariaFernanda1818`), rama `main`, sin bypass de administradores, *Prevent self-review* desactivado | Settings → Environments → production |
 | 10 | `gh-deployments.png` | Historial de Deployments por ambiente | Página principal del repositorio → panel lateral **Deployments** (requiere sesión iniciada) |
-| 11 | `gh-rulesets.png` | Protección de ramas `qa` / `main` (checks obligatorios) | Settings → Rules → Rulesets |
+| 11 | `gh-rulesets.png` | Solo si se configura la protección de ramas (hoy **no existe**; ver `CONFIGURACION.md` §3.4) | Settings → Rules → Rulesets |
 | 12 | `firebase-hosting-prod.png` | Hosting de `taskflow-prod-mf1818`: historial de versiones con mensaje `prod 0fb3f92 run #7` | Firebase Console → Hosting |
 | 13 | `firebase-firestore-reglas.png` | Firestore → Reglas publicadas (igual a `firestore.rules`) | Firebase Console → Firestore → Reglas |
 | 14 | `firebase-plan-spark.png` | Plan **Spark** en los proyectos (sin facturación) | Firebase Console → Uso y facturación |
 | 15 | `gcp-wif-proveedor.png` | Proveedor `github-oidc` con la condición de atributos | Google Cloud → IAM → Workload Identity Federation |
 | 16 | `gcp-sa-roles.png` | Roles de `github-deployer` (exactamente 4) y sin claves | Google Cloud → IAM |
+| 18 | `gh-ci-prueba-fallida.png` | *(Opcional, recomendada para el criterio «pruebas que bloquean despliegues fallidos»)* CI en rojo en un PR de prueba con un test roto a propósito, **sin hacer merge** | PR temporal hacia `develop`; cerrarlo sin fusionar |
 | 17 | `prod-tarea-creada.png` | Producción con una tarea de demostración creada y persistida tras recargar | https://taskflow-prod-mf1818.web.app |
 
 > No incluyas en las capturas datos sensibles: correos personales visibles, tokens o la API key completa. Los IDs de proyecto, de repositorio y de cuenta de servicio no son secretos.
