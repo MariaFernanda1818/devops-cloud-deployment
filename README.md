@@ -27,11 +27,10 @@ Aplicación web de gestión de tareas (React + TypeScript + Vite) con persistenc
 
 | Ambiente | Rama | URL de la aplicación | "API" (servicio backend) | Estado |
 |---|---|---|---|---|
-| DEV | `develop` | _https://[proyecto-dev].web.app_ | Firestore del proyecto DEV | Pendiente de validar |
-| QA | `qa` | _https://[proyecto-qa].web.app_ | Firestore del proyecto QA | Pendiente de validar |
-| PDN | `main` | _https://[proyecto-prod].web.app_ | Firestore del proyecto PROD | Pendiente de validar |
+| DEV | `develop` | https://taskflow-dev-mf1818.web.app | Firestore del proyecto DEV | Desplegado y validado|
+| QA | `qa` | https://taskflow-qa-mf1818.web.app | Firestore del proyecto QA | Desplegado y validado |
+| PDN | `main` | https://taskflow-prod-mf1818.web.app| Firestore del proyecto PROD | Desplegado y validado |
 
-> Las URLs se reemplazarán por las reales solo después de un despliegue verificado por el smoke test. No se publican URLs inventadas.
 
 ---
 
