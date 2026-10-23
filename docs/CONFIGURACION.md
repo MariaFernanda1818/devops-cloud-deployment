@@ -1,12 +1,12 @@
 # Guía de configuración de la infraestructura
 
-Pasos manuales, que se hacen una sola vez, para habilitar los tres ambientes. Ninguno requiere tarjeta de crédito ni activar facturación (plan **Spark**).
+Pasos manuales, que se hacen una sola vez, para habilitar los tres ambientes. **Estado: completados en DEV, QA y PDN** (verificado el 2026-10-22). Ninguno requiere tarjeta de crédito ni activar facturación (plan **Spark**).
 
 | Ambiente | Proyecto Firebase | Número de proyecto | GitHub Environment | Rama |
 |---|---|---|---|---|
 | DEV | `taskflow-dev-mf1818` | `977902311183` | `development` | `develop` |
-| QA | _pendiente_ | _pendiente_ | `qa` | `qa` |
-| PDN | _pendiente_ | _pendiente_ | `production` | `main` |
+| QA | `taskflow-qa-mf1818` | `749584004557` | `qa` | `qa` |
+| PDN | `taskflow-prod-mf1818` | `1048091956239` | `production` | `main` |
 
 Identificadores de GitHub (públicos, obtenidos de `api.github.com`):
 
@@ -282,11 +282,15 @@ Solo si WIF no funcionara: crea una clave JSON para `github-deployer`, guárdala
 Créalos **antes de subir las ramas `qa` o `main`**. Si un workflow referencia un environment inexistente, GitHub lo crea automáticamente **sin protección**.
 
 - `qa` → Deployment branches: `qa`.
-- `production` → ✅ **Required reviewers**: tu usuario (y el docente si aplica). Deployment branches: rama `main` y tag `v*`. Opcional: ✅ *Prevent self-review* si hay otro revisor.
+- `production` → ✅ **Required reviewers**: tu usuario (y el docente si aplica). Deployment branches: rama `main`. Opcional: ✅ *Prevent self-review* si hay otro revisor.
 
-### 3.4 Protección de ramas
+> **Estado real (verificado con la API de GitHub el 2026-10-22):** `development` → `develop`; `qa` → `qa`; `production` → solo la rama `main`, con revisor obligatorio `MariaFernanda1818`, *Prevent self-review* desactivado y bypass de administradores desactivado. `deploy-firebase.yml` también acepta tags `v*` en producción, pero el environment no los permite (y no existen tags).
 
-Se configura **después del primer push**, cuando los checks ya existen: **Settings → Rules → Rulesets → New branch ruleset**.
+### 3.4 Protección de ramas (recomendada · **no configurada actualmente**)
+
+> Al 2026-10-22 no hay rulesets ni protección clásica en `develop`, `qa` ni `main` (verificado con la API de GitHub). Los checks se ejecutan en cada PR, pero no son obligatorios para hacer merge.
+
+Se configura cuando los checks ya existen: **Settings → Rules → Rulesets → New branch ruleset**.
 
 - `develop`, `qa`, `main`: *Require a pull request before merging* y *Require status checks to pass*: `Lint, tipos, pruebas unitarias y build`, `Reglas de seguridad de Firestore (emulador)`, `E2E con emuladores (Chromium escritorio y móvil)`.
 - `qa` y `main`: además `Validar rama de origen`.
