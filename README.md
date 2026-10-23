@@ -38,7 +38,6 @@ Un pipeline de **GitHub Actions** construye y prueba la aplicación, la desplieg
 | API DEV / QA / PDN | **No aplica como API REST propia.** Arquitectura serverless: el servicio de datos es Cloud Firestore de cada proyecto (`taskflow-dev-mf1818`, `taskflow-qa-mf1818`, `taskflow-prod-mf1818`), al que la app accede con el SDK de Firebase. Las reglas de seguridad hacen el papel de capa de autorización. No se expone como endpoint abierto (ver [§3](#3-arquitectura)). |
 | Base de datos y estrategia de persistencia | Cloud Firestore (modo Native, edición Standard, ubicación `nam5`): una base `(default)` **por ambiente**, en proyectos separados. Cada usuario obtiene un `uid` anónimo y solo accede a `users/{uid}/tasks`. No se incluyen credenciales. |
 | Pipeline | https://github.com/MariaFernanda1818/devops-cloud-deployment/actions · Promociones: [PR #1](https://github.com/MariaFernanda1818/devops-cloud-deployment/pull/1) (develop → qa) y [PR #2](https://github.com/MariaFernanda1818/devops-cloud-deployment/pull/2) (qa → main) · Producción: [CD #7](https://github.com/MariaFernanda1818/devops-cloud-deployment/actions/runs/39859676964), commit `0fb3f92`, con aprobación manual registrada |
-| Video | **⟦PENDIENTE: enlace al video con permisos de visualización⟧** |
 | Costos y limpieza | Plan **Spark** (sin costo) y **sin cuenta de facturación vinculada** en los tres proyectos; GitHub Actions con runners estándar, sin costo en repositorios públicos. Costos potenciales y riesgos en [§8](#8-costos-plan-spark); plan de eliminación en [§9](#9-desactivación-y-eliminación-de-recursos). |
 
 ### Ambientes
@@ -62,7 +61,6 @@ Un pipeline de **GitHub Actions** construye y prueba la aplicación, la desplieg
 | 7 | Desactivación y eliminación de recursos | [§9](#9-desactivación-y-eliminación-de-recursos) |
 | 8 | Formato de entrega del equipo | [§1](#1-formato-de-entrega-del-equipo) |
 | 9 | Evidencias visuales | [§10](#10-evidencias) · [`docs/EVIDENCIAS.md`](docs/EVIDENCIAS.md) |
-| 10 | Video de demostración | [§1](#1-formato-de-entrega-del-equipo) (pendiente) · guion en [`docs/SUSTENTACION.md`](docs/SUSTENTACION.md) |
 
 ---
 
@@ -469,7 +467,7 @@ Cuando agregues una captura, reemplaza su marcador por la imagen, por ejemplo `!
 4. **Aprobación manual:** un revisor del environment `production` pulsa *Review deployments → Approve and deploy*. En [CD #7](https://github.com/MariaFernanda1818/devops-cloud-deployment/actions/runs/39859676964) la aprobación quedó registrada a nombre de `MariaFernanda1818` (el job esperó de 21:45:39 a 22:01:55 UTC). La misma cuenta fusionó el PR #2 e inició el run, así que hubo control manual pero **no separación de funciones** (ver [§7](#7-seguridad)).
 5. **Despliegue y verificación:** autenticación por OIDC, publicación en https://taskflow-prod-mf1818.web.app y smoke test. La insignia **PRODUCCIÓN** y el commit `0fb3f92` en el pie permiten verificarlo a simple vista.
 
-Guion detallado para el video y preguntas frecuentes: [`docs/SUSTENTACION.md`](docs/SUSTENTACION.md).
+Guion detallado de la sustentación y preguntas frecuentes: [`docs/SUSTENTACION.md`](docs/SUSTENTACION.md).
 
 ---
 

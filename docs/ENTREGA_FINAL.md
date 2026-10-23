@@ -9,9 +9,8 @@ Electiva: Laboratorio DevOps · Modalidad B (proyecto propio)
 | Integrantes | Carlos Daniel Quintero, Geronimo Valencia Gonzalez, Mariana Duarte Castro, Sofia Salgado Osorio, Maria Fernanda Valencia Noreña |
 | Repositorio | https://github.com/MariaFernanda1818/devops-cloud-deployment |
 | Fecha de verificación | 2026-10-22 |
-| Video | **⟦PENDIENTE: enlace al video con permisos de visualización⟧** |
 
-> Documento académico independiente. El detalle técnico completo está en el [README](../README.md); la configuración paso a paso, en [`CONFIGURACION.md`](CONFIGURACION.md); las evidencias, en [`EVIDENCIAS.md`](EVIDENCIAS.md); el guion del video, en [`SUSTENTACION.md`](SUSTENTACION.md).
+> Documento académico independiente. El detalle técnico completo está en el [README](../README.md); la configuración paso a paso, en [`CONFIGURACION.md`](CONFIGURACION.md); las evidencias, en [`EVIDENCIAS.md`](EVIDENCIAS.md); el guion de la sustentación, en [`SUSTENTACION.md`](SUSTENTACION.md).
 
 ---
 
@@ -47,7 +46,6 @@ El pipeline se autentica en Google Cloud **sin claves permanentes**, mediante Wo
 | API DEV / QA / PDN | No aplica como API REST propia: el servicio de datos es Cloud Firestore de cada proyecto (`taskflow-dev-mf1818`, `taskflow-qa-mf1818`, `taskflow-prod-mf1818`), accedido con el SDK de Firebase y protegido por reglas de seguridad |
 | Base de datos y estrategia de persistencia | Cloud Firestore (Native, Standard, `nam5`), una base por ambiente. Cada usuario tiene un `uid` anónimo y solo accede a `users/{uid}/tasks`. Sin credenciales en el repositorio. |
 | Pipeline | https://github.com/MariaFernanda1818/devops-cloud-deployment/actions · producción: [CD #7](https://github.com/MariaFernanda1818/devops-cloud-deployment/actions/runs/39859676964) |
-| Video | **⟦PENDIENTE: enlace al video con permisos de visualización⟧** |
 | Costos y limpieza | Plan Spark sin facturación; costos potenciales y procedimiento de limpieza en §8 y §9 |
 
 ### Ambientes

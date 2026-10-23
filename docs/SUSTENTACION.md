@@ -1,6 +1,6 @@
-# Guion de sustentación y video
+# Guion de sustentación
 
-Duración sugerida: 8 a 10 minutos. Integrantes: Carlos Daniel Quintero, Geronimo Valencia Gonzalez, Mariana Duarte Castro, Sofia Salgado Osorio, Maria Fernanda Valencia Noreña.
+Duración sugerida de la sustentación: 8 a 10 minutos. Integrantes: Carlos Daniel Quintero, Geronimo Valencia Gonzalez, Mariana Duarte Castro, Sofia Salgado Osorio, Maria Fernanda Valencia Noreña.
 
 ## 1. Introducción (≈1 min)
 - TaskFlow: gestor de tareas en React + TypeScript + Vite, con persistencia en Cloud Firestore.
@@ -25,7 +25,7 @@ Explicar que cada ambiente es un **proyecto Firebase distinto**, con datos, usua
 
 ## 4. Pipeline en vivo (≈3 min)
 1. `.github/workflows/`: `ci.yml`, `cd.yml`, `deploy-firebase.yml`, `promotion-guard.yml`.
-2. **CD #1** (fallo): un error en la autenticación del despliegue detiene el pipeline y no se publica nada. Si se graba la evidencia opcional #18 de `EVIDENCIAS.md`, mostrar también un PR con una prueba fallida y la CI en rojo.
+2. **CD #1** (fallo): un error en la autenticación del despliegue detiene el pipeline y no se publica nada. Si se captura la evidencia opcional #18 de `EVIDENCIAS.md`, mostrar también un PR con una prueba fallida y la CI en rojo.
 3. **PR #1** (`develop → qa`) y **CD #5**: smoke test y **pruebas de aceptación E2E contra la URL de QA**.
 4. **PR #2** (`qa → main`): 5 checks en verde, incluido *Validar rama de origen*.
 5. **CD #7**: grafo de jobs, la **espera de aprobación** del environment `production`, el registro de quién aprobó y el Summary con el smoke test de producción.
