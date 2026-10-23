@@ -11,13 +11,13 @@ Aplicación web de gestión de tareas (React + TypeScript + Vite) con persistenc
 
 | Campo | Respuesta |
 |---|---|
-| Integrantes | _[Nombres completos]_ |
+| Integrantes | _[Carlos Daniel Quintero, Geronimo Valencia Gonzalez, Mariana Duarte Castro, Sofia Salgado Osorio, Maria Fernanda Valencia Noreña]_ |
 | Modalidad | Proyecto propio (Modalidad B) |
 | Plataforma principal | Firebase (Hosting + Cloud Firestore + Authentication) con CI/CD en GitHub Actions |
 | Repositorio | https://github.com/MariaFernanda1818/devops-cloud-deployment |
-| URL DEV | _Pendiente: se completa tras el primer despliegue real_ |
-| URL QA | _Pendiente_ |
-| URL PDN/Producción | _Pendiente_ |
+| URL DEV | https://taskflow-dev-mf1818.web.app |
+| URL QA | https://taskflow-qa-mf1818.web.app |
+| URL PDN/Producción | https://taskflow-prod-mf1818.web.app |
 | API DEV / QA / PDN | No aplica como API REST propia: arquitectura serverless. La API es Cloud Firestore de cada proyecto (ver §3). |
 | Base de datos y persistencia | Cloud Firestore, una base por ambiente en proyectos Firebase separados. Acceso protegido por reglas de seguridad y autenticación anónima. |
 | Pipeline | https://github.com/MariaFernanda1818/devops-cloud-deployment/actions |
