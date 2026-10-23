@@ -21,7 +21,6 @@ Aplicación web de gestión de tareas (React + TypeScript + Vite) con persistenc
 | API DEV / QA / PDN | No aplica como API REST propia: arquitectura serverless. La API es Cloud Firestore de cada proyecto (ver §3). |
 | Base de datos y persistencia | Cloud Firestore, una base por ambiente en proyectos Firebase separados. Acceso protegido por reglas de seguridad y autenticación anónima. |
 | Pipeline | https://github.com/MariaFernanda1818/devops-cloud-deployment/actions |
-| Video | _[Enlace con permisos de visualización]_ |
 | Costos y limpieza | Plan gratuito Spark, sin facturación habilitada (ver §8 y §9) |
 
 ### Tabla de ambientes
