@@ -5,6 +5,7 @@ Aplicación web de gestión de tareas (React + TypeScript + Vite) con persistenc
 Un pipeline de **GitHub Actions** construye y prueba la aplicación, la despliega por rama y promueve los cambios mediante Pull Requests. Producción exige **aprobación manual**. GitHub Actions se autentica en Google Cloud **sin claves**, mediante Workload Identity Federation (OIDC).
 
 > Taller práctico *Despliegue de aplicaciones e infraestructura en la nube* · Electiva Laboratorio DevOps.
+> 📄 **Documento académico de entrega:** [`docs/ENTREGA_FINAL.md`](docs/ENTREGA_FINAL.md)
 
 **Contenido:**
 [1. Entrega](#1-formato-de-entrega-del-equipo) ·
@@ -55,7 +56,7 @@ Un pipeline de **GitHub Actions** construye y prueba la aplicación, la desplieg
 | # | Entregable | Ubicación |
 |---|---|---|
 | 1-3 | URLs DEV, QA y Producción | [Tabla de ambientes](#ambientes) |
-| 4 | Repositorio con README, instrucciones y pipeline | Este README · [`docs/CONFIGURACION.md`](docs/CONFIGURACION.md) · [`.github/workflows/`](.github/workflows) |
+| 4 | Repositorio con README, instrucciones y pipeline | Este README · [`docs/ENTREGA_FINAL.md`](docs/ENTREGA_FINAL.md) · [`docs/CONFIGURACION.md`](docs/CONFIGURACION.md) · [`.github/workflows/`](.github/workflows) |
 | 5 | Diagrama de arquitectura (servicios, ambientes y flujos) | [§3](#3-arquitectura) |
 | 6 | Tabla de servicios, seguridad y costos potenciales | [§4](#4-servicios-utilizados), [§7](#7-seguridad), [§8](#8-costos-plan-spark) |
 | 7 | Desactivación y eliminación de recursos | [§9](#9-desactivación-y-eliminación-de-recursos) |
